@@ -1,8 +1,15 @@
-package org.example;
+package org.example.games;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.KeyEvent;
+import org.example.MiniGame;
+
+import javafx.scene.Node;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.paint.Color;
+
+import static org.example.ShakeEffect.shakeScreen;
 
 public class SmithyGame implements MiniGame {
 
@@ -17,13 +24,19 @@ public class SmithyGame implements MiniGame {
     private int totalScore = 0; // tracks how good the sword ends up
     private int strikes = 0;    // how many times player has pressed space
 
-    private Image dwarfDown;
-    private Image dwarfUp;
+    private final Image dwarfDown;
+    private final Image dwarfUp;
 
-    public SmithyGame() {
-        dwarfDown = new ImageIcon(getClass().getResource("/dwarfArmDown.png")).getImage();
-        dwarfUp = new ImageIcon(getClass().getResource("/dwarfArmUp.png")).getImage();
+    private final Node screen; // the node to shake on a good hit (your GamePanel canvas)
+
+    public SmithyGame(Node screen) {
+        this.screen = screen;
+        dwarfDown = new Image(getClass().getResource("/dwarfArmDown.png").toExternalForm());
+        dwarfUp = new Image(getClass().getResource("/dwarfArmUp.png").toExternalForm());
     }
+
+    public int getTotalScore() { return totalScore; }
+    public int getStrikes() { return strikes; }
 
     @Override
     public void update() {
@@ -39,39 +52,39 @@ public class SmithyGame implements MiniGame {
     }
 
     @Override
-    public void draw(Graphics g) {
-        // Zones
-        g.setColor(Color.DARK_GRAY); g.fillRect(100, 500, 600, 40);
-        g.setColor(Color.ORANGE);    g.fillRect(275, 500, 100, 40);
-        g.setColor(Color.GREEN);     g.fillRect(375, 500, 50, 40);
-        g.setColor(Color.ORANGE);    g.fillRect(425, 500, 100, 40);
+    public void draw(GraphicsContext gc) {
+        // Coloured Zones
+        gc.setFill(Color.DARKGRAY); gc.fillRect(100, 500, 600, 40);
+        gc.setFill(Color.ORANGE);   gc.fillRect(275, 500, 100, 40);
+        gc.setFill(Color.GREEN);    gc.fillRect(375, 500, 50, 40);
+        gc.setFill(Color.ORANGE);   gc.fillRect(425, 500, 100, 40);
 
-        // Marker
-        g.setColor(Color.BLACK);
-        g.fillRect(markerX, 500, 10, 40);
+        // the moving marker
+        gc.setFill(Color.BLACK);
+        gc.fillRect(markerX, 500, 10, 40);
 
-        // Dwarf
+        // Dwarf img
         if (hammerTime) {
-            g.drawImage(dwarfDown, 200, 200, 400, 300, null);
+            gc.drawImage(dwarfDown, 200, 200, 400, 300);
         } else {
-            g.drawImage(dwarfUp, 200, 200, 400, 300, null);
+            gc.drawImage(dwarfUp, 200, 200, 400, 300);
         }
 
-        // Result text
+        // hit or miss txt
         if (showResult) {
-            g.setColor(Color.GREEN);
-            g.drawString(resultText, 400, 150);
+            gc.setFill(Color.GREEN);
+            gc.fillText(resultText, 400, 150);
         }
 
-        // Score
-        g.setColor(Color.WHITE);
-        g.drawString("Sword quality: " + totalScore, 20, 30);
-        g.drawString("Strikes: " + strikes, 20, 50);
+        // counter for hits n stuff (add maximum and stuff later)
+        gc.setFill(Color.WHITE);
+        gc.fillText("Sword quality: " + totalScore, 20, 30);
+        gc.fillText("Strikes: " + strikes, 20, 50);
     }
 
     @Override
     public void onKeyPress(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+        if (e.getCode() == KeyCode.SPACE) {
             checkResult();
         }
     }
@@ -85,14 +98,14 @@ public class SmithyGame implements MiniGame {
         if (markerX >= 375 && markerX <= 425) {
             resultText = "Perfect!";
             totalScore += 3;
+            shakeScreen(screen, 16, 0.25);
         } else if (markerX >= 275 && markerX <= 525) {
             resultText = "Okay!";
             totalScore += 1;
+            shakeScreen(screen, 5, 0.25);
         } else {
             resultText = "Miss!";
+            shakeScreen(screen, 2, 0.25);
         }
     }
-
-    public int getTotalScore() { return totalScore; }
-    public int getStrikes() { return strikes; }
 }

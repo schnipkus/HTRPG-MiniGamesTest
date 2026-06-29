@@ -1,52 +1,48 @@
 package org.example;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
+import javafx.animation.AnimationTimer;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
 
-public class GamePanel extends JPanel {
+public class GamePanel extends Canvas {
     public static final int WIDTH = 800;
     public static final int HEIGHT = 600;
 
     private MiniGame currentGame;
-    private Thread gameThread;
-    private boolean running;
+    private AnimationTimer gameLoop;
 
     public GamePanel() {
-        setPreferredSize(new Dimension(WIDTH, HEIGHT));
-        setBackground(Color.BLACK);
-        setFocusable(true);
+        super(WIDTH, HEIGHT);
+        setFocusTraversable(true); // canvas needs this to receive key events
 
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (currentGame != null) currentGame.onKeyPress(e);
-            }
+        setOnKeyPressed(e -> {
+            if (currentGame != null) currentGame.onKeyPress(e);
         });
 
         // start with the smithy game for now
-        currentGame = new org.example.SmithyGame();
+        currentGame = new org.example.games.SmithyGame(this);
     }
 
-    public void setGame(MiniGame game) { //chooses the game that plays. just for this project to try all easily
+    public void setGame(MiniGame game) { // chooses the game that plays. just for this project to try all easily
         currentGame = game;
     }
 
     public void startGameLoop() {
-        running = true;
-        gameThread = new Thread(() -> {
-            while (running) {
+        gameLoop = new AnimationTimer() {
+            @Override
+            public void handle(long now) {
                 if (currentGame != null) currentGame.update();
-                repaint();
-                try { Thread.sleep(16); } catch (InterruptedException e) { break; }
+                render();
             }
-        });
-        gameThread.start();
+        };
+        gameLoop.start();
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        if (currentGame != null) currentGame.draw(g);
+    private void render() {
+        GraphicsContext gc = getGraphicsContext2D();
+        gc.setFill(Color.BLACK);
+        gc.fillRect(0, 0, WIDTH, HEIGHT);
+        if (currentGame != null) currentGame.draw(gc);
     }
 }

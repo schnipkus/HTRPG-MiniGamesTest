@@ -1,9 +1,10 @@
 package org.example;
-import java.awt.*;
-import java.awt.event.KeyEvent;
+
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.input.KeyEvent;
 
 public interface MiniGame {
     void update();
-    void draw(Graphics g);
+    void draw(GraphicsContext gc);
     void onKeyPress(KeyEvent e);
 }
