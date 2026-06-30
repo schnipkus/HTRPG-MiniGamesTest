@@ -25,7 +25,8 @@ public class GamePanel extends Canvas {
 
         //currentGame = new org.example.games.SmithyGame(this);
         //currentGame = new org.example.games.PolicySwiper(this);
-        currentGame = new org.example.games.CashDrop(this);
+        //currentGame = new org.example.games.CashDrop(this);
+        currentGame = new org.example.games.CashCatch(this);
 
     }
 
@@ -33,11 +34,35 @@ public class GamePanel extends Canvas {
         currentGame = game;
     }
 
+    // fixed time: game logic always advances at this many updates per real second, not bound to fps no more
+    private static final long UPDATES_PER_SECOND = 60;
+    private static final long UPDATE_INTERVAL_NANOS = 1_000_000_000L / UPDATES_PER_SECOND;
+    private static final long MAX_ACCUMULATED_NANOS = UPDATE_INTERVAL_NANOS * 5; // cap "catch up" after a freeze/tab switch
+
+    private long lastUpdateNanos = -1;
+    private long accumulatorNanos = 0;
+
     public void startGameLoop() {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                if (currentGame != null) currentGame.update();
+                if (lastUpdateNanos < 0) {
+                    lastUpdateNanos = now; // first frame: nothing to catch up on yet
+                }
+
+                accumulatorNanos += now - lastUpdateNanos;
+                lastUpdateNanos = now;
+
+                // avoid a "spiral of death" if the app was paused/backgrounded
+                if (accumulatorNanos > MAX_ACCUMULATED_NANOS) {
+                    accumulatorNanos = MAX_ACCUMULATED_NANOS;
+                }
+
+                while (accumulatorNanos >= UPDATE_INTERVAL_NANOS) {
+                    if (currentGame != null) currentGame.update(UPDATE_INTERVAL_NANOS / 1_000_000_000.0);
+                    accumulatorNanos -= UPDATE_INTERVAL_NANOS;
+                }
+
                 render();
             }
         };

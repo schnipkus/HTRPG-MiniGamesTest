@@ -14,13 +14,13 @@ import static org.example.ShakeEffect.shakeScreen;
 
 public class SmithyGame implements MiniGame {
 
-    private int timer = 0;
+    private double timer = 0; // seconds remaining for the hit-feedback display
     private boolean hammerTime = false;
     private boolean showResult = false;
     private String resultText = "";
 
-    private int markerX = 100;
-    private int markerSpeed = 5;
+    private double markerX = 100;
+    private double markerSpeed = 300; // px/sec
 
     // bounds the marker travels between (track stays fixed, zones move within it)
     private static final int TRACK_MIN = 100;
@@ -33,8 +33,8 @@ public class SmithyGame implements MiniGame {
     // current center of the target zones, randomized on each space press
     private int zoneCenter = 400;
 
-    // how much the marker speed increases after every strike
-    private static final int speedUp = 1;
+    // how much the marker speed increases after every strike (px/sec)
+    private static final int speedUp = 60;
 
     private int totalScore = 0; // tracks how good the sword ends up
     private int strikes = 0;    // how many times player has pressed space
@@ -54,12 +54,12 @@ public class SmithyGame implements MiniGame {
     public int getStrikes() { return strikes; }
 
     @Override
-    public void update() {
-        markerX += markerSpeed;
+    public void update(double dt) {
+        markerX += markerSpeed * dt;
         if (markerX > 700 || markerX < 100) markerSpeed *= -1;
 
         if (timer > 0) {
-            timer--;
+            timer -= dt;
         } else {
             hammerTime = false;
             showResult = false;
@@ -110,7 +110,7 @@ public class SmithyGame implements MiniGame {
     private void checkResult() {
         showResult = true;
         hammerTime = true;
-        timer = 60;
+        timer = 1.0; // seconds the hit-feedback stays on screen
         strikes++;
 
         int perfectStart = zoneCenter - PERFECT_WIDTH / 2;
@@ -139,5 +139,5 @@ public class SmithyGame implements MiniGame {
         // gas gas gas
         if (markerSpeed > 0) markerSpeed += speedUp;
         if (markerSpeed < 0) markerSpeed -= speedUp;
-         }
+    }
 }

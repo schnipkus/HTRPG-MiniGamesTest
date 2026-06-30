@@ -23,11 +23,11 @@ public class PolicySwiper implements MiniGame {
     public record Policy(String policy, int approvalEffect) {}
 
     private final List<Policy> policies = List.of(
-        new Policy("Increase accessibility of schooling for disadvantaged minorities", 5),
-        new Policy("Lower taxes for the rich", -3),
-        new Policy("Alcoholic beverages are now taxed", -2),
-        new Policy("Raise the minimum wage nationwide", 4),
-        new Policy("Conscript peasants into the royal army", -6));
+            new Policy("Increase accessibility of schooling for disadvantaged minorities", 5),
+            new Policy("Lower taxes for the rich", -3),
+            new Policy("Alcoholic beverages are now taxed", -2),
+            new Policy("Raise the minimum wage nationwide", 4),
+            new Policy("Conscript peasants into the royal army", -6));
 
     private int currentIndex = 0; //counts at which policy we are
 
@@ -60,10 +60,10 @@ public class PolicySwiper implements MiniGame {
     public int getRejectedCount() { return rejectedCount; }
 
     @Override
-    public void update() {
+    public void update(double dt) {
         if (!swiping) return;
 
-        swipeProgress += 0.05; // speed of the swipe-out animation. again. ouch.
+        swipeProgress += 3.0 * dt; // full swipe-out animation takes ~1/3 second
         double eased = swipeProgress * (2 - swipeProgress); // ease-out, starts fast then settles
 
         cardOffsetX = swipeDirection * eased * 900;

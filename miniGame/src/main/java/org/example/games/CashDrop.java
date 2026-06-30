@@ -22,30 +22,30 @@ public class CashDrop implements MiniGame {
     private static final double PLAYER_Y = 40;          // fixed vertical position near the top
     private static final int PLAYER_WIDTH = 100;
     private static final int PLAYER_HEIGHT = 30;
-    private static final double PLAYER_SPEED = 6;
+    private static final double PLAYER_SPEED = 360; // px/sec
 
     private double playerX = WIDTH / 2.0 - PLAYER_WIDTH / 2.0;
     private boolean movingLeft = false;
     private boolean movingRight = false;
 
     // --- projectiles (travel downward, toward the crowd) ---
-    private static final double PROJECTILE_SPEED = 12;
+    private static final double PROJECTILE_SPEED = 720; // px/sec
     private static final int PROJECTILE_WIDTH = 24;
     private static final int PROJECTILE_HEIGHT = 24;
     private final List<double[]> projectiles = new ArrayList<>(); // {x, y}
 
     // --- shooting cooldown ---
-    private static final int SHOOT_COOLDOWN_FRAMES = 18; // ~0.3s at 60fps
-    private int framesSinceLastShot = SHOOT_COOLDOWN_FRAMES; // ready to fire immediately
+    private static final double SHOOT_COOLDOWN_SECONDS = 18.0 / 60.0; // ~0.3s
+    private double timeSinceLastShot = SHOOT_COOLDOWN_SECONDS; // ready to fire immediately
 
     // --- crowd (travels upward, toward the player) ---
-    private static final int SPAWN_INTERVAL_FRAMES = 30; // ~0.7s at 60fps
-    private int framesSinceLastSpawn = 0;
+    private static final double SPAWN_INTERVAL_SECONDS = 30.0 / 60.0; // ~0.7s
+    private double timeSinceLastSpawn = 0;
     private static final int MAX_CROWD_SIZE = 40; // population cap
 
     private static final int PERSON_WIDTH = 60;
     private static final int PERSON_HEIGHT = 60;
-    private static final double CROWD_SPEED = 0.3;   // pixels per frame the crowd creeps up
+    private static final double CROWD_SPEED = 18; // px/sec the crowd creeps up
     private static final double KNOCKBACK_AMOUNT = 50; // how far a hit person gets shoved back down
     private static final int PERSON_HEALTH = 2;
     private final List<double[]> crowd = new ArrayList<>(); // {x, y, health}
@@ -103,8 +103,8 @@ public class CashDrop implements MiniGame {
     }
 
     @Override
-    public void update() {
-        framesSinceLastShot++;
+    public void update(double dt) {
+        timeSinceLastShot += dt;
         if (spaceHeld) shoot();
         if (gameOver) return;
 
@@ -117,21 +117,21 @@ public class CashDrop implements MiniGame {
         }
 
         // move player, clamped to screen
-        if (movingLeft) playerX -= PLAYER_SPEED;
-        if (movingRight) playerX += PLAYER_SPEED;
+        if (movingLeft) playerX -= PLAYER_SPEED * dt;
+        if (movingRight) playerX += PLAYER_SPEED * dt;
         playerX = Math.max(0, Math.min(WIDTH - PLAYER_WIDTH, playerX));
 
         // move projectiles downward, remove once they pass the bottom edge
         Iterator<double[]> projIt = projectiles.iterator();
         while (projIt.hasNext()) {
             double[] p = projIt.next();
-            p[1] += PROJECTILE_SPEED;
+            p[1] += PROJECTILE_SPEED * dt;
             if (p[1] > HEIGHT) projIt.remove();
         }
 
         // crowd creeps upward
         for (double[] person : crowd) {
-            person[1] -= CROWD_SPEED;
+            person[1] -= CROWD_SPEED * dt;
         }
 
         // projectile vs person collisions
@@ -151,9 +151,9 @@ public class CashDrop implements MiniGame {
         crowd.removeIf(person -> person[2] <= 0);
 
         // keep the pressure going once a wave is cleared
-        framesSinceLastSpawn++;
-        if (framesSinceLastSpawn >= SPAWN_INTERVAL_FRAMES) {
-            framesSinceLastSpawn = 0;
+        timeSinceLastSpawn += dt;
+        if (timeSinceLastSpawn >= SPAWN_INTERVAL_SECONDS) {
+            timeSinceLastSpawn = 0;
             spawnPerson();
         }
 
@@ -230,8 +230,8 @@ public class CashDrop implements MiniGame {
 
     private void shoot() {
         if (gameOver) return;
-        if (framesSinceLastShot < SHOOT_COOLDOWN_FRAMES) return;
-        framesSinceLastShot = 0;
+        if (timeSinceLastShot < SHOOT_COOLDOWN_SECONDS) return;
+        timeSinceLastShot = 0;
 
         double x = playerX + PLAYER_WIDTH / 2.0 - PROJECTILE_WIDTH / 2.0;
         double y = PLAYER_Y + PLAYER_HEIGHT; // spawn just below the player
