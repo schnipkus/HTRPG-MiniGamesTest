@@ -18,8 +18,16 @@ import java.util.List;
 
 public class PolicySwiper implements MiniGame {
 
+    int publicOpinion = 0;
     //policies
-    private final List<String> policies = List.of("a", "b", "c", "d", "e");
+    public record Policy(String policy, int approvalEffect) {}
+
+    private final List<Policy> policies = List.of(
+        new Policy("Increase accessibility of schooling for disadvantaged minorities", 5),
+        new Policy("Lower taxes for the rich", -3),
+        new Policy("Alcoholic beverages are now taxed", -2),
+        new Policy("Raise the minimum wage nationwide", 4),
+        new Policy("Conscript peasants into the royal army", -6));
 
     private int currentIndex = 0; //counts at which policy we are
 
@@ -89,8 +97,10 @@ public class PolicySwiper implements MiniGame {
     public void onKeyPress(KeyEvent e) {
         if (e.getCode() == KeyCode.LEFT) {
             startSwipe(-1); // reject
+            publicOpinion -= policies.get(currentIndex).approvalEffect();
         } else if (e.getCode() == KeyCode.RIGHT) {
             startSwipe(1);  // accept
+            publicOpinion += policies.get(currentIndex).approvalEffect();
         }
     }
 
@@ -102,7 +112,7 @@ public class PolicySwiper implements MiniGame {
         gc.setTextBaseline(VPos.TOP);
         gc.setFont(Font.font(18));
         gc.fillText("Policy Swiper", 20, 20);
-        gc.fillText("Accepted: " + acceptedCount + "   Rejected: " + rejectedCount, 20, 45);
+        gc.fillText("Rejected: " + rejectedCount + "   Accepted: " + acceptedCount, 20, 45);
         gc.fillText("<- Reject        Accept ->", 20, 70);
 
         // --- card --- all design with assistance for now
@@ -123,7 +133,7 @@ public class PolicySwiper implements MiniGame {
         Font cardFont = Font.font(20);
         gc.setFont(cardFont);
 
-        List<String> lines = wrapText(policies.get(currentIndex), cardFont, CARD_WIDTH - 40);
+        List<String> lines = wrapText(policies.get(currentIndex).policy, cardFont, CARD_WIDTH - 40);
         double lineHeight = 26;
         double startY = -((lines.size() - 1) * lineHeight) / 2.0;
         for (int i = 0; i < lines.size(); i++) {
@@ -131,7 +141,7 @@ public class PolicySwiper implements MiniGame {
         }
         gc.restore();
 
-        /** --- buttons (visual reference for what each arrow key does) ---
+        // --- buttons (visual reference for what each arrow key does) ---
         gc.setGlobalAlpha(1.0);
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setTextBaseline(VPos.CENTER);
@@ -146,7 +156,7 @@ public class PolicySwiper implements MiniGame {
         gc.fillOval(CHECK_BUTTON_X - BUTTON_RADIUS, CHECK_BUTTON_Y - BUTTON_RADIUS, BUTTON_RADIUS * 2, BUTTON_RADIUS * 2);
         gc.setFill(Color.WHITE);
         gc.fillText("\u2713", CHECK_BUTTON_X, CHECK_BUTTON_Y);
-         **/
+
     }
 
 

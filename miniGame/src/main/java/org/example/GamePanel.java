@@ -19,10 +19,13 @@ public class GamePanel extends Canvas {
         setOnKeyPressed(e -> {
             if (currentGame != null) currentGame.onKeyPress(e);
         });
+        setOnKeyReleased(e -> {
+            if (currentGame != null) currentGame.onKeyRelease(e);
+        });
 
-        // start with the smithy game for now
-        currentGame = new org.example.games.SmithyGame(this);
+        //currentGame = new org.example.games.SmithyGame(this);
         //currentGame = new org.example.games.PolicySwiper(this);
+        currentGame = new org.example.games.CashDrop(this);
 
     }
 
