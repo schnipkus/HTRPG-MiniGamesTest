@@ -22,6 +22,8 @@ public class GamePanel extends Canvas {
 
         // start with the smithy game for now
         currentGame = new org.example.games.SmithyGame(this);
+        //currentGame = new org.example.games.PolicySwiper(this);
+
     }
 
     public void setGame(MiniGame game) { // chooses the game that plays. just for this project to try all easily

@@ -1,5 +1,6 @@
 package org.example.games;
 
+import javafx.application.Platform;
 import org.example.MiniGame;
 
 import javafx.scene.Node;
@@ -20,6 +21,20 @@ public class SmithyGame implements MiniGame {
 
     private int markerX = 100;
     private int markerSpeed = 5;
+
+    // bounds the marker travels between (track stays fixed, zones move within it)
+    private static final int TRACK_MIN = 100;
+    private static final int TRACK_MAX = 700;
+
+    // width of the zones, kept constant; only their position (zoneCenter) changes
+    private static final int PERFECT_WIDTH = 50;
+    private static final int OKAY_WIDTH = 250;
+
+    // current center of the target zones, randomized on each space press
+    private int zoneCenter = 400;
+
+    // how much the marker speed increases after every strike
+    private static final int speedUp = 1;
 
     private int totalScore = 0; // tracks how good the sword ends up
     private int strikes = 0;    // how many times player has pressed space
@@ -49,15 +64,18 @@ public class SmithyGame implements MiniGame {
             hammerTime = false;
             showResult = false;
         }
+        if(strikes > 10) Platform.exit(); //minigame auto closes
     }
 
     @Override
     public void draw(GraphicsContext gc) {
         // Coloured Zones
-        gc.setFill(Color.DARKGRAY); gc.fillRect(100, 500, 600, 40);
-        gc.setFill(Color.ORANGE);   gc.fillRect(275, 500, 100, 40);
-        gc.setFill(Color.GREEN);    gc.fillRect(375, 500, 50, 40);
-        gc.setFill(Color.ORANGE);   gc.fillRect(425, 500, 100, 40);
+        int okayStart = zoneCenter - OKAY_WIDTH / 2;
+        int perfectStart = zoneCenter - PERFECT_WIDTH / 2;
+
+        gc.setFill(Color.DARKGRAY); gc.fillRect(TRACK_MIN, 500, TRACK_MAX - TRACK_MIN, 40);
+        gc.setFill(Color.ORANGE);   gc.fillRect(okayStart, 500, OKAY_WIDTH, 40);
+        gc.setFill(Color.GREEN);    gc.fillRect(perfectStart, 500, PERFECT_WIDTH, 40);
 
         // the moving marker
         gc.setFill(Color.BLACK);
@@ -95,11 +113,16 @@ public class SmithyGame implements MiniGame {
         timer = 60;
         strikes++;
 
-        if (markerX >= 375 && markerX <= 425) {
+        int perfectStart = zoneCenter - PERFECT_WIDTH / 2;
+        int perfectEnd = zoneCenter + PERFECT_WIDTH / 2;
+        int okayStart = zoneCenter - OKAY_WIDTH / 2;
+        int okayEnd = zoneCenter + OKAY_WIDTH / 2;
+
+        if (markerX >= perfectStart && markerX <= perfectEnd) {
             resultText = "Perfect!";
             totalScore += 3;
             shakeScreen(screen, 16, 0.25);
-        } else if (markerX >= 275 && markerX <= 525) {
+        } else if (markerX >= okayStart && markerX <= okayEnd) {
             resultText = "Okay!";
             totalScore += 1;
             shakeScreen(screen, 5, 0.25);
@@ -107,5 +130,14 @@ public class SmithyGame implements MiniGame {
             resultText = "Miss!";
             shakeScreen(screen, 2, 0.25);
         }
-    }
+        // moves coloured bar
+        int minCenter = TRACK_MIN + OKAY_WIDTH / 2;
+        int maxCenter = TRACK_MAX - OKAY_WIDTH / 2;
+        //decides new middle where everything moves relatively to
+        zoneCenter = new java.util.Random().nextInt(minCenter, maxCenter + 1);
+
+        // gas gas gas
+        if (markerSpeed > 0) markerSpeed += speedUp;
+        if (markerSpeed < 0) markerSpeed -= speedUp;
+         }
 }
