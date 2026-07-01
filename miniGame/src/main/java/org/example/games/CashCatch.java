@@ -25,6 +25,12 @@ public class CashCatch implements MiniGame {
     private static final double SHOOTER_BASE_SPEED = 180; // px/sec
     private double shooterX = WIDTH / 2.0 - SHOOTER_WIDTH / 2.0;
     private int shooterDir = 1; // 1 = right, -1 = left
+    private double shooterSpeed = SHOOTER_BASE_SPEED;
+    private double timeUntilSpeedChange = randomSpeedChangeCooldown();
+
+    private double randomSpeedChangeCooldown() {
+        return 0.5 + Math.random() * 1.5; // change every 0.5–2.0 seconds
+    }
 
     // --- player (bottom, catches projectiles) ---
     private static final double PLAYER_Y = HEIGHT - 90;
@@ -41,20 +47,20 @@ public class CashCatch implements MiniGame {
     private static final int PROJECTILE_HEIGHT = 24;
     private final List<double[]> projectiles = new ArrayList<>(); // {x, y}
 
-    // --- firing cadence (gets a little faster over time) ---
-    private static final double SHOOT_INTERVAL_SECONDS_START = 70.0 / 60.0;
-    private static final double SHOOT_INTERVAL_SECONDS_MIN = 30.0 / 60.0;
+    // --- firing cadence (random interval between shots) ---
+    private static final double SHOOT_INTERVAL_MIN = 0.3;
+    private static final double SHOOT_INTERVAL_MAX = 1.4;
     private double timeSinceLastShot = 0;
+    private double nextShootInterval = randomInterval();
 
-    // --- lives ---
-    private static final int START_LIVES = 3;
-    private int lives = START_LIVES;
+    private double randomInterval() {
+        return SHOOT_INTERVAL_MIN + Math.random() * (SHOOT_INTERVAL_MAX - SHOOT_INTERVAL_MIN);
+    }
 
-    // --- survival / win condition ---
-    private static final int SURVIVE_SECONDS = 30;
+    // --- timer ---
+    private static final int GAME_DURATION_SECONDS = 60;
     private long startTimeNanos = -1;
     private boolean gameOver = false;
-    private boolean won = false;
 
     private int score = 0;
 
@@ -74,20 +80,24 @@ public class CashCatch implements MiniGame {
 
         if (startTimeNanos < 0) startTimeNanos = System.nanoTime();
         double elapsed = (System.nanoTime() - startTimeNanos) / 1_000_000_000.0;
-        if (elapsed >= SURVIVE_SECONDS) {
+        if (elapsed >= GAME_DURATION_SECONDS) {
             gameOver = true;
-            won = true;
+            Platform.exit();
             return;
         }
 
-        // difficulty ramps up the longer the round goes
-        double difficulty = Math.min(1.0, elapsed / SURVIVE_SECONDS);
-        double shooterSpeed = SHOOTER_BASE_SPEED + difficulty * 150; // px/sec
+        double difficulty = Math.min(1.0, elapsed / GAME_DURATION_SECONDS);
         double projectileSpeed = PROJECTILE_BASE_SPEED + difficulty * 210; // px/sec
-        double shootInterval = SHOOT_INTERVAL_SECONDS_START
-                - difficulty * (SHOOT_INTERVAL_SECONDS_START - SHOOT_INTERVAL_SECONDS_MIN);
 
-        // move shooter, bounce off walls
+        // move shooter with irregular speed, bounce off walls
+        timeUntilSpeedChange -= dt;
+        if (timeUntilSpeedChange <= 0) {
+            timeUntilSpeedChange = randomSpeedChangeCooldown();
+            double baseSpeed = SHOOTER_BASE_SPEED + difficulty * 150;
+            shooterSpeed = Math.random() < 0.15
+                    ? 0                                          // 15% chance: brief pause
+                    : baseSpeed * (0.4 + Math.random() * 1.2);  // otherwise: 40–160% of base speed
+        }
         shooterX += shooterSpeed * shooterDir * dt;
         if (shooterX <= 0) {
             shooterX = 0;
@@ -102,10 +112,11 @@ public class CashCatch implements MiniGame {
         if (movingRight) playerX += PLAYER_SPEED * dt;
         playerX = Math.max(0, Math.min(WIDTH - PLAYER_WIDTH, playerX));
 
-        // shooter fires periodically
+        // shooter fires at irregular intervals
         timeSinceLastShot += dt;
-        if (timeSinceLastShot >= shootInterval) {
+        if (timeSinceLastShot >= nextShootInterval) {
             timeSinceLastShot = 0;
+            nextShootInterval = randomInterval();
             shoot();
         }
 
@@ -123,14 +134,9 @@ public class CashCatch implements MiniGame {
                 continue;
             }
 
-            // missed -> lose a life
+            // missed -> just remove it, no penalty
             if (p[1] > HEIGHT) {
                 projIt.remove();
-                lives--;
-                if (lives <= 0) {
-                    gameOver = true;
-                    won = false;
-                }
             }
         }
     }
@@ -160,16 +166,10 @@ public class CashCatch implements MiniGame {
 
         gc.setFill(Color.WHITE);
         gc.fillText("Score: " + score, 20, 20);
-        gc.fillText("Lives: " + lives, 20, 40);
         double remaining = startTimeNanos < 0
-                ? SURVIVE_SECONDS
-                : Math.max(0, SURVIVE_SECONDS - (System.nanoTime() - startTimeNanos) / 1_000_000_000.0);
-        gc.fillText("Time: " + (int) Math.ceil(remaining), 20, 60);
-
-        if (gameOver) {
-            gc.setFill(won ? Color.LIME : Color.RED);
-            gc.fillText(won ? "Survived! Final score: " + score : "Out of lives! Final score: " + score, 260, 300);
-        }
+                ? GAME_DURATION_SECONDS
+                : Math.max(0, GAME_DURATION_SECONDS - (System.nanoTime() - startTimeNanos) / 1_000_000_000.0);
+        gc.fillText("Time: " + (int) Math.ceil(remaining), 20, 40);
     }
 
     @Override
